@@ -6,6 +6,20 @@ from googleapiclient.discovery import build
 import csv
 import pandas as pd
 
+import os
+class csv_generator:
+    def __init__(self, c_name) -> None:
+        self.client_name = c_name
+        self.currentPATH = self.get_current_path()
+        self.joinedPATH  = self.joinPath()
+        
+    
+    
+    def get_current_path():
+        return os.path.dirname(os.path.abspath(__file__))
+    def joinPath():
+        return os.path.join(self.currentPATH, 'csv_data')
+    
 api_key = 'AIzaSyBJixTpGuWue17mPX1Ia_O7vUcrcvcOdMs'
 channel_unique_id = ["UCAaZm4GcWqDg8358LIx3kmw"]    #this is the world of boxing
 channel_name = "David Dobrik"   #if channel unique id is unknown
@@ -26,10 +40,4 @@ for i in input_list:
     else:
         
 
-# print("UCAaZm4GcWqDg8358LIx3kmw" in record['Name'])
 
-# print("UCBfqzdKPe_CzDqo1qj2_GSw" in record['Unique ID'])
-
-# for i in input_list:
-#     for j in record['Name']:
-#         if 

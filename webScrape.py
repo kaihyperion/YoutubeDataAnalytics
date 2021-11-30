@@ -13,6 +13,8 @@ import re
 import time
 from googleapiclient.discovery import build
 
+import xlsxwriter
+
 # Future goal, try to find a way to get this API key (just in case if it fails)
 # first define the API_key
 
@@ -74,6 +76,14 @@ def statsGet(request, countType):
     return count
 
 def getPlaylistID(request):
+    """getPlaylistID returns the unique playlist ID that holds all the videos of the youtube channel
+
+    Args:
+        request 
+
+    Returns:
+        string : that holds the ID of the playlist 
+    """
     id = request['items'][0]['contentDetails']['relatedPlaylists']['uploads']
 
     return id
@@ -100,7 +110,8 @@ def parseISO8601(duration):
         duration = 30
     return duration
 
-def csv_generator(api_key, channel_name = '', channel_unique_id = ''):
+def csv_generator(api_key, channel_name = '', channel_unique_id = '', client_name = ''):
+    
     
     
     ### Initializing all the values we will pull out
@@ -206,84 +217,88 @@ def csv_generator(api_key, channel_name = '', channel_unique_id = ''):
         count += 1
         
         
-    # print("check2")
-    # print(len(titles))
-    # print(len(like_count))
-    # print(len(dislike_count))
-    # print(len(views))
-    
-    # print(len(comment_count))
-    # print(len(videoIds))
-    # print(len(publishedDate))
-    # print(len(video_description))
+  
     seconds_list = []
     for i in range(len(video_length)):
         seconds = parseISO8601(video_length[i])
         seconds_list.append(seconds)
         video_length[i]= time.strftime('%H:%M:%S', time.gmtime(seconds))
-    print(video_length)
-    print(seconds_list)
-    data = {'title':titles, 'videoIDs':videoIds, 'video_description': video_description, 'publishedDate':publishedDate, 'likes':like_count, 'dislikes':dislike_count,'views':views, 'comment': comment_count, 'video_length': video_length, 'length_in_seconds': seconds_list}
+  
+    data = {'channelName':channel_Title, 'title':titles, 'videoIDs':videoIds, 'video_description': video_description, 'publishedDate':publishedDate, 'likes':like_count, 'dislikes':dislike_count,'views':views, 'comment': comment_count, 'video_length': video_length, 'length_in_seconds': seconds_list}
     df = pd.DataFrame(data)
     print("Creating CSV file...")
-    # if there is a folder named "csv_data"
-    current_PATH = os.path.dirname(os.path.abspath(__file__))
     
-    if os.path.isdir('csvData'):  
+    # if there is a folder named client_name
+    
+    if os.path.isdir(client_name):  
         #this is only for linux or mac OS. microsoft uses \
-        path = os.path.join(current_PATH,'csvData')
+        path = os.path.join(current_PATH, client_name)
         print(path)
+        
         df.to_csv(f'{path}/{channel_Title}.csv', index=False)
+        
+    
+    # if there is not a folder named "csv_data" create one
     else:
-        os.mkdir('csvData')
-        path = os.path.join(current_PATH,'csvData')
+        os.mkdir(client_name)
+        path = os.path.join(current_PATH,client_name)
         df.to_csv(f'{path}/{channel_Title}.csv', index=False)
-    print("Successfully created CSV file with the name")
-    # data = pd.read_csv(f'{channel_Title}.csv')
-    # data.head()
-    # data.describe()
+    
+    
+    # ### Creating Excel file
+    # ### if excel file already exists
+    # if os.path.isdir(f"{client_name}.xlsx"):
+    #     writer = pd.ExcelWriter(f"{client_name}.xlsx", engine = 'xlsxwriter')
+    #     df.to_excel(writer, sheet_name= channel_Title)
+        
+    # ## if excel file does not exist, create one
+    # if os.path.isdir('excelData'):  
+    #     #this is only for linux or mac OS. microsoft uses \
+    #     path = os.path.join(current_PATH,'excelData')
+    #     print(path)
+        
+    #     df.to_csv(f'{path}/{channel_Title}.xlsx', index=False)
+        
+    
+    # # if there is not a folder named "csv_data" create one
+    # else:
+    #     os.mkdir('excelData')
+    #     path = os.path.join(current_PATH,'excelData')
+    #     df.to_excel(f'{path}/{channel_Title}.xlsx', index=False)
+    print("Successfully created Excel file with the name")
+    return df, channel_Title
+   
 
 
 
-
+client_name = str(input("Enter our client channel name: \n(no space or special characters. i.e. Laugh Society should be laughSociety)\n"))
 current_PATH = os.path.dirname(os.path.abspath(__file__))
 print("Current directory: ", current_PATH)
+
+
 a=os.path.join(current_PATH, 'csv_data')
 print(a)
 print(os.path.isdir(a))
 print("Program start\n")
-x = input("Enter unique ID: ")
-print(f"Generating CSV file for {x}...")
 
+"""Make sure the text file has one after each line
+unique id
+unique id
+unique id
+...
+"""
 api_key = 'AIzaSyBJixTpGuWue17mPX1Ia_O7vUcrcvcOdMs'
-csv_generator(api_key, channel_unique_id=x)
 
+print(f"Generating competitor CSV file for {client_name}...")
+writer = pd.ExcelWriter(f"{client_name}.xlsx", engine='xlsxwriter')
+with open(f"{client_name}_cList.txt") as f:
+    myList = f.read().splitlines()
+    
+for id in myList:
+    print(f"Generating CSV file for {id}...")
+    df, channel_title = csv_generator(api_key, channel_unique_id=id, client_name=client_name)
+    df.to_excel(writer, sheet_name=channel_title)
+# After the csv files are generated, create a single xlsx file (excel)
 
+writer.save()
 
-
-# nextPage_token = None
-# res = youtube.playlistItems().list(playlistId = uni_id, maxResults = 50, part = 'snippet', pageToken=nextPage_token).execute()
-
-# while 1:
-#     res = youtube.playlistItems().list(playlistId = uni_id, maxResults = 50, part = 'snippet', pageToken=nextPage_token).execute()
-
-#     abc += res['items']
-#     nextPage_token = res.get('nextPageToken')
-
-#     if nextPage_token is None:
-#         break
-
-# print(abc)
-
-
-# request = youtube.channels().list(
-#     part = 'statistics',
-#     id = 'UCAaZm4GcWqDg8358LIx3kmw'
-# )
-
-# response = request.execute()
-
-# print(response)
-
-# print("Enter id: ")
-# x = str(input())
